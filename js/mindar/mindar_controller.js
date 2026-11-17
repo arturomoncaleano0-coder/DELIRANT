@@ -51,7 +51,11 @@ class MindARController {
         this.mindar = new MindARThree({
             container: this.container,
             imageTargetSrc: this.imageTargetSrc,
-            filterMinCF: 0.001,
+            // Suavizado del seguimiento (One Euro Filter). Menos filterMinCF = menos temblor
+            // cuando el celular está casi quieto (default de MindAR: 0.001). Si notas que el
+            // contenido "se arrastra" al mover rápido, sube filterBeta; si aún tiembla, baja
+            // filterMinCF (p. ej. 0.00005).
+            filterMinCF: 0.0001,
             filterBeta: 1000,
             warmupTolerance: 5,
             missTolerance: 5,
