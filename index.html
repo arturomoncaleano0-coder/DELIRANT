@@ -304,14 +304,46 @@
 			return loadPromise;
 		}
 
+		// Los navegadores móviles solo dejan reproducir un <video> con sonido si fue "activado"
+		// por un toque del usuario, y tampoco lo descargan hasta que se reproduce. Por eso,
+		// con el toque de Iniciar se arranca y se pausa al instante (sin volumen): así,
+		// cuando se detecte el target, el video ya está listo y arranca sin demora.
+		function primeVideos() {
+			for (const asset of player?.assets?.videos ?? []) {
+				const video = asset.video;
+				if (video._primed) continue;
+				video._primed = true;
+
+				const volume = video.volume;
+				video.volume = 0;
+				const restore = () => { video.volume = volume; };
+
+				const playing = video.play();
+				if (playing && playing.then) {
+					playing.then(() => {
+						video.pause();
+						video.currentTime = 0;
+						restore();
+					}).catch(() => {
+						restore();
+						video._primed = false; // se reintentará en el siguiente toque
+					});
+				}
+			}
+		}
+
 		// Al darle al botón start se inicia la cámara (requiere gesto del usuario).
 		startButton.addEventListener('click', async () => {
 
 			progressContainer.style.display = 'flex';
 
+			primeVideos(); // dentro del gesto, antes de cualquier espera
+
 			try {
 				await loadEverything();
 				if (!loaded) return;
+
+				primeVideos(); // por si la escena terminó de cargar justo después del toque
 
 				setProgress(90, 'Iniciando cámara...');
 
